@@ -1,0 +1,25 @@
+name: exp08-policy
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  policy-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject workflow or prohibited-path changes without checking out PR code
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          files=$(curl --fail-with-body -sS \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            "$GITHUB_API_URL/repos/$REPO/pulls/$PR/files?per_page=100")
+          echo "$files" | jq -e 'length < 100' >/dev/null
+          echo "$files" | jq -e 'all(.[]; (.filename | startswith(".github/workflows/") | not) and (.filename | test("(^|/)(secret|secrets|production)(/|\\.|$)"; "i") | not))' >/dev/null
