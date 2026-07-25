@@ -1,3 +1,4 @@
+# T3 synthetic tamper marker: this workflow modification must be rejected by policy-guard.
 name: exp08-candidate
 on:
   pull_request:
